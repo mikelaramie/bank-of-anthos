@@ -1,5 +1,7 @@
 ![Continuous Integration](https://github.com/GoogleCloudPlatform/bank-of-anthos/workflows/Continuous%20Integration%20-%20Master/Release/badge.svg)
 
+[![CIS](https://app.soluble.cloud/api/v1/public/badges/6e743a8a-fe83-4f60-b594-ca1c4c44905a.svg?orgId=173978625235)](https://app.soluble.cloud/repos/details/github.com/mikelaramie/bank-of-anthos?orgId=173978625235)  [![IaC](https://app.soluble.cloud/api/v1/public/badges/133c501a-25dc-43a8-b0f8-e88df407872d.svg?orgId=173978625235)](https://app.soluble.cloud/repos/details/github.com/mikelaramie/bank-of-anthos?orgId=173978625235)  
+
 # Bank of Anthos
 
 **Bank of Anthos** is a sample HTTP-based web app that simulates a bank's payment processing network, allowing users to create artificial bank accounts and complete transactions.
