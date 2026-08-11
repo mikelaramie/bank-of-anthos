@@ -38,6 +38,7 @@ from opentelemetry.propagators.cloud_trace_propagator import CloudTraceFormatPro
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 
 from db import UserDb
+from secrets import resolve_accounts_db_uri
 
 def create_app():
     """Flask application factory to create instances
@@ -242,7 +243,7 @@ def create_app():
 
     # Configure database connection
     try:
-        users_db = UserDb(os.environ.get("ACCOUNTS_DB_URI"), app.logger)
+        users_db = UserDb(resolve_accounts_db_uri(app.logger), app.logger)
     except OperationalError:
         app.logger.critical("users_db database connection failed")
         sys.exit(1)

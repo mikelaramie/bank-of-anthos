@@ -20,9 +20,24 @@ resources:
 components:
   - ../../base
 patches:
-  - target: # configure workload identity
+  - target:
       kind: ServiceAccount
+      name: bank-of-anthos
     patch: |-
       - op: add
         path: /metadata/annotations/iam.gke.io~1gcp-service-account
-        value: gke-workload-production@bank-of-anthos-ci.iam.gserviceaccount.com 
+        value: gke-workload-production@bank-of-anthos-ci.iam.gserviceaccount.com
+  - target:
+      kind: ServiceAccount
+      name: userservice
+    patch: |-
+      - op: add
+        path: /metadata/annotations/iam.gke.io~1gcp-service-account
+        value: gke-userservice-production@bank-of-anthos-ci.iam.gserviceaccount.com
+  - target:
+      kind: ServiceAccount
+      name: balancereader
+    patch: |-
+      - op: add
+        path: /metadata/annotations/iam.gke.io~1gcp-service-account
+        value: gke-balancereader-production@bank-of-anthos-ci.iam.gserviceaccount.com

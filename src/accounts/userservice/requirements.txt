@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,15 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources:
-  - serviceaccount.yaml
-  - userservice.yaml
-components:
-  - ../../../components/accounts
-  - ../../../../components/backend-service
-patches:
-  - target:
-      kind: Deployment
-    path: add-private-key-volume.yaml
+# Minimal runtime dependencies for userservice.
+# Prefer pyproject.toml + uv.lock for full dependency resolution.
+google-cloud-secret-manager>=2.25.0
+psycopg2-binary>=2.9.11
+sqlalchemy>=1.4.54,<2.0
+flask>=3.1.2
+gunicorn>=23.0.0

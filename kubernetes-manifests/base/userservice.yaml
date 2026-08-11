@@ -76,11 +76,13 @@ spec:
               value: /tmp/.ssh/privatekey
             - name: LOG_LEVEL
               value: info
+            - name: GCP_PROJECT
+              value: bank-of-anthos-ci
+            - name: ACCOUNTS_DB_SECRET_ID
+              value: accounts-db-credentials-development
           envFrom:
             - configMapRef:
                 name: environment-config
-            - configMapRef:
-                name: accounts-db-config
           image: us-central1-docker.pkg.dev/bank-of-anthos-ci/bank-of-anthos/userservice:v0.6.10@sha256:d8c4412edc46ab105000f721788b73301651cc43b19cee7e7302739f81882dcc
           name: userservice
           ports:
@@ -120,7 +122,7 @@ spec:
         runAsGroup: 1000
         runAsNonRoot: true
         runAsUser: 1000
-      serviceAccountName: bank-of-anthos
+      serviceAccountName: userservice
       terminationGracePeriodSeconds: 5
       volumes:
         - emptyDir: {}
