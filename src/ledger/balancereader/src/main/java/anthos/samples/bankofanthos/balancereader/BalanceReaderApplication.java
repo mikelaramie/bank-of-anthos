@@ -51,14 +51,48 @@ public class BalanceReaderApplication {
         "SPRING_DATASOURCE_PASSWORD"
     };
 
+    private static final String[] DATASOURCE_PROPERTIES = {
+        "spring.datasource.url",
+        "spring.datasource.username",
+        "spring.datasource.password"
+    };
+
+    /**
+     * Returns true when datasource credentials are loaded from Secret Manager.
+     */
+    private static boolean usesSecretManager() {
+        String secretId = System.getenv("LEDGER_DB_SECRET_ID");
+        return secretId != null && !secretId.isBlank();
+    }
+
+    private static boolean isDatasourceEnvVar(String name) {
+        return "SPRING_DATASOURCE_URL".equals(name)
+            || "SPRING_DATASOURCE_USERNAME".equals(name)
+            || "SPRING_DATASOURCE_PASSWORD".equals(name);
+    }
+
     public static void main(String[] args) {
+        SecretManagerDataSourceLoader.loadIfConfigured();
+
         // Check that all required environment variables are set.
         for (String v : EXPECTED_ENV_VARS) {
+            if (usesSecretManager() && isDatasourceEnvVar(v)) {
+                continue;
+            }
             String value = System.getenv(v);
             if (value == null) {
                 LOGGER.fatal(String.format(
                     "%s environment variable not set", v));
                 System.exit(1);
+            }
+        }
+        if (usesSecretManager()) {
+            for (String property : DATASOURCE_PROPERTIES) {
+                if (System.getProperty(property) == null) {
+                    LOGGER.fatal(String.format(
+                        "%s system property not set from Secret Manager", property));
+                    System.exit(1);
+                }
             }
         }
         SpringApplication.run(BalanceReaderApplication.class, args);
