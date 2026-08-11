@@ -109,6 +109,14 @@ def create_app():
         display_name = token_data['name']
         username = token_data['user']
         account_id = token_data['acct']
+        accounts = _fetch_user_accounts(username, token)
+        active_account = _find_active_account(accounts, account_id)
+        other_accounts = [
+            acct for acct in accounts if acct['accountid'] != account_id
+        ]
+        has_savings = any(
+            acct.get('account_type') == 'SAVINGS' for acct in accounts
+        )
 
         hed = {'Authorization': 'Bearer ' + token}
 
@@ -157,14 +165,18 @@ def create_app():
 
         return render_template('index.html',
                                account_id=account_id,
+                               accounts=accounts,
+                               active_account=active_account,
                                balance=api_response[BALANCE_NAME],
                                bank_name=os.getenv('BANK_NAME', 'Bank of Anthos'),
                                cluster_name=cluster_name,
                                contacts=api_response[CONTACTS_NAME],
                                cymbal_logo=os.getenv('CYMBAL_LOGO', 'false'),
+                               has_savings=has_savings,
                                history=api_response[TRANSACTION_LIST_NAME],
                                message=request.args.get('msg', None),
                                name=display_name,
+                               other_accounts=other_accounts,
                                platform=platform,
                                platform_display_name=platform_display_name,
                                pod_name=pod_name,
@@ -261,6 +273,149 @@ def create_app():
                                 msg='Payment failed',
                                 _external=True,
                                 _scheme=app.config['SCHEME']))
+
+    @app.route('/transfer', methods=['POST'])
+    def transfer():
+        """
+        Transfer funds between the user's own accounts via ledgerwriter.
+        """
+        token = request.cookies.get(app.config['TOKEN_NAME'])
+        if not verify_token(token):
+            app.logger.error('Error submitting transfer: user is not authenticated.')
+            return abort(401)
+        try:
+            token_data = decode_token(token)
+            from_account_id = token_data['acct']
+            to_account_id = request.form['to_account']
+            accounts = _fetch_user_accounts(token_data['user'], token)
+            owned_ids = {acct['accountid'] for acct in accounts}
+            if to_account_id not in owned_ids:
+                raise UserWarning('invalid destination account')
+            if to_account_id == from_account_id:
+                raise UserWarning('cannot transfer to the same account')
+
+            user_input = request.form['amount']
+            transfer_amount = int(Decimal(user_input) * 100)
+            transaction_data = {
+                "fromAccountNum": from_account_id,
+                "fromRoutingNum": app.config['LOCAL_ROUTING'],
+                "toAccountNum": to_account_id,
+                "toRoutingNum": app.config['LOCAL_ROUTING'],
+                "amount": transfer_amount,
+                "uuid": request.form['uuid'],
+            }
+            _submit_transaction(transaction_data)
+            app.logger.info('Transfer initiated successfully.')
+            return redirect(code=303,
+                            location=url_for('home',
+                                             msg='Transfer successful',
+                                             _external=True,
+                                             _scheme=app.config['SCHEME']))
+
+        except requests.exceptions.RequestException as err:
+            app.logger.error('Error submitting transfer: %s', str(err))
+        except UserWarning as warn:
+            app.logger.error('Error submitting transfer: %s', str(warn))
+            msg = 'Transfer failed: {}'.format(str(warn))
+            return redirect(url_for('home',
+                                    msg=msg,
+                                    _external=True,
+                                    _scheme=app.config['SCHEME']))
+        except (ValueError, DecimalException) as num_err:
+            app.logger.error('Error submitting transfer: %s', str(num_err))
+            msg = 'Transfer failed: {} is not a valid number'.format(user_input)
+
+        return redirect(url_for('home',
+                                msg='Transfer failed',
+                                _external=True,
+                                _scheme=app.config['SCHEME']))
+
+    @app.route('/switch-account', methods=['POST'])
+    def switch_account():
+        """Switch the active account by re-issuing the session JWT."""
+        token = request.cookies.get(app.config['TOKEN_NAME'])
+        if not verify_token(token):
+            return abort(401)
+        try:
+            account_id = request.form['accountid']
+            hed = {
+                'Authorization': 'Bearer ' + token,
+                'content-type': 'application/json',
+            }
+            resp = requests.post(
+                url=app.config['SWITCH_ACCOUNT_URI'],
+                json={'accountid': account_id},
+                headers=hed,
+                timeout=app.config['BACKEND_TIMEOUT'],
+            )
+            resp.raise_for_status()
+            new_token = resp.json()['token']
+            claims = decode_token(new_token)
+            max_age = claims['exp'] - claims['iat']
+            redirect_resp = make_response(redirect(url_for('home',
+                                                           _external=True,
+                                                           _scheme=app.config['SCHEME'])))
+            redirect_resp.set_cookie(app.config['TOKEN_NAME'], new_token, max_age=max_age)
+            return redirect_resp
+        except (RequestException, HTTPError) as err:
+            app.logger.error('Error switching account: %s', str(err))
+        return redirect(url_for('home',
+                                msg='Could not switch account',
+                                _external=True,
+                                _scheme=app.config['SCHEME']))
+
+    @app.route('/open-savings', methods=['POST'])
+    def open_savings():
+        """Open a savings account for the logged-in user."""
+        token = request.cookies.get(app.config['TOKEN_NAME'])
+        if not verify_token(token):
+            return abort(401)
+        try:
+            token_data = decode_token(token)
+            username = token_data['user']
+            hed = {
+                'Authorization': 'Bearer ' + token,
+                'content-type': 'application/json',
+            }
+            url = '{}/{}/accounts'.format(app.config['USERSERVICE_URI'], username)
+            resp = requests.post(
+                url=url,
+                json={'account_type': 'SAVINGS', 'nickname': 'Savings'},
+                headers=hed,
+                timeout=app.config['BACKEND_TIMEOUT'],
+            )
+            resp.raise_for_status()
+            return redirect(url_for('home',
+                                    msg='Savings account opened',
+                                    _external=True,
+                                    _scheme=app.config['SCHEME']))
+        except (RequestException, HTTPError) as err:
+            app.logger.error('Error opening savings account: %s', str(err))
+        return redirect(url_for('home',
+                                msg='Could not open savings account',
+                                _external=True,
+                                _scheme=app.config['SCHEME']))
+
+    def _fetch_user_accounts(username, token):
+        """Return bank accounts for the authenticated user."""
+        hed = {'Authorization': 'Bearer ' + token}
+        url = '{}/{}/accounts'.format(app.config['USERSERVICE_URI'], username)
+        resp = requests.get(url=url,
+                            headers=hed,
+                            timeout=app.config['BACKEND_TIMEOUT'])
+        resp.raise_for_status()
+        return resp.json().get('accounts', [])
+
+    def _find_active_account(accounts, account_id):
+        """Return metadata for the active account, with sensible defaults."""
+        for account in accounts:
+            if account['accountid'] == account_id:
+                return account
+        return {
+            'accountid': account_id,
+            'account_type': 'CHECKING',
+            'nickname': 'Checking',
+        }
 
     @app.route('/deposit', methods=['POST'])
     def deposit():
@@ -668,6 +823,8 @@ def create_app():
     app.config["HISTORY_URI"] = 'http://{}/transactions'.format(
         os.environ.get('HISTORY_API_ADDR'))
     app.config["LOGIN_URI"] = 'http://{}/login'.format(
+        os.environ.get('USERSERVICE_API_ADDR'))
+    app.config['SWITCH_ACCOUNT_URI'] = 'http://{}/users/switch-account'.format(
         os.environ.get('USERSERVICE_API_ADDR'))
     app.config["CONTACTS_URI"] = 'http://{}/contacts'.format(
         os.environ.get('CONTACTS_API_ADDR'))

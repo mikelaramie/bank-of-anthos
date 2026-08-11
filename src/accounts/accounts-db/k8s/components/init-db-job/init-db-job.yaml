@@ -27,7 +27,9 @@ data:
     SLEEP_TIME=60
     DB_READY=0
     INIT_SQL_SCRIPT="/scripts/0-accounts-schema.sql"
+    ACCOUNTS_SQL_SCRIPT="/scripts/2-accounts-table.sql"
     TEST_SQL_SCRIPT="/scripts/1-load-testdata.sh"
+    SAVINGS_SQL_SCRIPT="/scripts/3-savings-testdata.sql"
 
     HOST=${1:-'127.0.0.1'}
     PORT=${2:-'5432'}
@@ -64,6 +66,20 @@ data:
             if [ $? -gt 0 ]; then
               echo "Problems running the test data script"
               ERROR=$((ERROR+1))
+            else
+              echo "Running accounts table migration"
+              psql --host=${HOST} --port=${PORT} --dbname=${DB_NAME} -f ${ACCOUNTS_SQL_SCRIPT}
+              if [ $? -gt 0 ]; then
+                echo "Problems running the accounts table script"
+                ERROR=$((ERROR+1))
+              else
+                echo "Running savings test data"
+                psql --host=${HOST} --port=${PORT} --dbname=${DB_NAME} -f ${SAVINGS_SQL_SCRIPT}
+                if [ $? -gt 0 ]; then
+                  echo "Problems running the savings test data script"
+                  ERROR=$((ERROR+1))
+                fi
+              fi
             fi
         fi
     else
@@ -229,6 +245,63 @@ data:
 
 
     main
+
+  2-accounts-table.sql: |
+    /*
+     * Copyright 2026 Google LLC
+     *
+     * Licensed under the Apache License, Version 2.0 (the "License");
+     * you may not use this file except in compliance with the License.
+     * You may obtain a copy of the License at
+     *
+     *     http://www.apache.org/licenses/LICENSE-2.0
+     *
+     * Unless required by applicable law or agreed to in writing, software
+     * distributed under the License is distributed on an "AS IS" BASIS,
+     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     * See the License for the specific language governing permissions and
+     * limitations under the License.
+     */
+
+    CREATE TABLE IF NOT EXISTS accounts (
+      accountid CHAR(10) PRIMARY KEY,
+      username VARCHAR(64) NOT NULL,
+      account_type VARCHAR(16) NOT NULL,
+      nickname VARCHAR(64),
+      CONSTRAINT fk_accounts_username
+        FOREIGN KEY (username) REFERENCES users (username),
+      CONSTRAINT uq_accounts_username_type UNIQUE (username, account_type)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_accounts_username ON accounts (username);
+
+    INSERT INTO accounts (accountid, username, account_type, nickname)
+    SELECT accountid, username, 'CHECKING', 'Checking'
+    FROM users
+    ON CONFLICT DO NOTHING;
+  3-savings-testdata.sql: |
+    /*
+     * Copyright 2026 Google LLC
+     *
+     * Licensed under the Apache License, Version 2.0 (the "License");
+     * you may not use this file except in compliance with the License.
+     * You may obtain a copy of the License at
+     *
+     *     http://www.apache.org/licenses/LICENSE-2.0
+     *
+     * Unless required by applicable law or agreed to in writing, software
+     * distributed under the License is distributed on an "AS IS" BASIS,
+     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     * See the License for the specific language governing permissions and
+     * limitations under the License.
+     */
+
+    INSERT INTO accounts (accountid, username, account_type, nickname) VALUES
+    ('1011226222', 'testuser', 'SAVINGS', 'Savings'),
+    ('1033623444', 'alice', 'SAVINGS', 'Savings'),
+    ('1055757666', 'bob', 'SAVINGS', 'Savings'),
+    ('1077441388', 'eve', 'SAVINGS', 'Savings')
+    ON CONFLICT DO NOTHING;
 
 ---
 apiVersion: batch/v1

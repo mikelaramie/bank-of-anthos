@@ -24,6 +24,26 @@
                   </span>
                 </a>
                 <div class="dropdown-menu" aria-labelledby="accountDropdown">
+                {% if accounts is defined %}
+                  <h6 class="dropdown-header">Switch Account</h6>
+                  {% for account in accounts %}
+                    {% if account.accountid == account_id %}
+                      <span class="dropdown-item active">{{ account.nickname }} ({{ account.accountid }})</span>
+                    {% else %}
+                      <form method="POST" action="/switch-account">
+                        <input type="hidden" name="accountid" value="{{ account.accountid }}">
+                        <button type="submit" class="dropdown-item">{{ account.nickname }} ({{ account.accountid }})</button>
+                      </form>
+                    {% endif %}
+                  {% endfor %}
+                  {% if not has_savings %}
+                    <div class="dropdown-divider"></div>
+                    <form method="POST" action="/open-savings">
+                      <button type="submit" class="dropdown-item">Open Savings Account</button>
+                    </form>
+                  {% endif %}
+                  <div class="dropdown-divider"></div>
+                {% endif %}
                   <form id="logout-form" method="POST" action="/logout">
                     <a class="dropdown-item" onclick="document.querySelector('#logout-form').submit();">Sign out<i class="fa-icon-spacer fas fa-sign-out-alt"></i></a>
                   </form>

@@ -52,7 +52,7 @@ limitations under the License.
       <div class="row col-lg-12 align-items-start top-row">
         <div class="col-md-8">
           <small class="text-uppercase text-muted secondary-text">Overview</small>
-          <h2 class="header-title">Checking Account</h2>
+          <h2 class="header-title">{{ active_account.nickname }} Account</h2>
         </div>
 
         <div class="col-md-4 account-info text-right">
@@ -115,6 +115,24 @@ limitations under the License.
           </div>
         </div>
       </div>
+    {% if other_accounts|length > 0 %}
+      <div class="col-lg-4 deposit-send-payment-div">
+        <div class="card card-button deposit-send-button" data-toggle="modal" data-target="#transferFunds" data-keyboard="false" data-backdrop="static">
+          <div class="card-body">
+            <div class="row align-items-start">
+              <div class="col">
+                <span class="h5 mb-0" id="transferSpan">
+                  Transfer Between Accounts
+                </span>
+              </div>
+              <div class="button-icon col-auto">
+                <span class="material-icons" id="transfer-icon">swap_horiz</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
 
       <!-- Transaction History Table -->
       <div class="row col-lg-12 mb-4 align-items-start">
@@ -370,6 +388,57 @@ limitations under the License.
           </div>
         </div>
       </div>
+
+      <!-- Transfer Modal -->
+    {% if other_accounts|length > 0 %}
+      <div class="modal fade" id="transferFunds" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <form id="transfer-form" class="needs-validation" novalidate="" method="POST" action="/transfer">
+              <div class="modal-header">
+                <h3 class="modal-title header-title">Transfer Between Your Accounts</h3>
+                <button type="button" class="close transfer-cancel" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <div class="row">
+                  <div class="col-md-10 offset-md-1 mb-4">
+                    <label class="text-uppercase text-muted secondary-text mb-3" for="transfer-accounts">Destination Account</label>
+                    <select class="custom-select d-block w-100" id="transfer-accounts" name="to_account" required>
+                      {% for account in other_accounts %}
+                        <option value="{{ account.accountid }}">{{ account.nickname }} - {{ account.accountid }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-10 offset-md-1">
+                    <label class="text-uppercase text-muted secondary-text mb-3" for="transfer-amount">Transfer Amount</label>
+                    <div class="input-group mb-3">
+                      <div class="input-group-prepend mr-2">
+                        <span class="input-group-text"><span class="amount-font material-icons">attach_money</span></span>
+                      </div>
+                      <input class="form-control amount-font" type="number" autocomplete="off" step="0.01" id="transfer-amount" name="amount" placeholder="0.00" min="0.01" max="{{ balance / 100 if balance is not none }}" required>
+                      <div class="invalid-feedback">
+                        Please enter a valid amount.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-body">
+                <div class="row align-items-end text-right">
+                  <div class="col-md-10 offset-md-1 text-right align-items-end">
+                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                      <button type="submit" class="btn btn-primary btn-with-padding deposit-send-button">Transfer</button>
+                    </div>
+                  </div>
+              </div>
+              <input type="hidden" id="transfer-uuid" name="uuid">
+            </form>
+          </div>
+        </div>
+      </div>
+    {% endif %}
     </main>
 {% include 'shared/footer.html' %}
 {% include 'shared/scripts.html' %}

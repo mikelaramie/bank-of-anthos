@@ -80,6 +80,7 @@ sequenceDiagram
 
 - **Read/write separation**: `ledger-writer` handles all writes; `balance-reader` and `transaction-history` are independent read services that poll `ledger-db`.
 - **Stateless auth**: `userservice` signs JWTs with an RSA private key. All other services verify them using the public key mounted from a shared Kubernetes Secret — no shared session store.
+- **Multi-account support**: Each user may have one checking and one savings account (`accounts` table in `accounts-db`). The JWT `acct` claim identifies the active account; switching accounts re-issues the token via `POST /users/switch-account`. Internal transfers between a user's own accounts use the existing ledger payment flow (different from/to account numbers).
 - **BFF pattern**: The `frontend` is the only service that calls other services. Backend services are all leaf nodes with no inter-service calls.
 - **Kustomize overlays**: Each service has `base` manifests plus `development`, `staging`, `production`, and `production-fwi` overlays.
 

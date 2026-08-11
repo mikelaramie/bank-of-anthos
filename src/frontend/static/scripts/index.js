@@ -51,6 +51,25 @@ document.addEventListener("DOMContentLoaded", function(event) {
     paymentForm.classList.add("was-validated");
   });
 
+  var transferForm = document.querySelector("#transfer-form");
+  if (transferForm) {
+    transferForm.addEventListener("submit", function(e) {
+      if(!transferForm.checkValidity() || document.querySelector("#transfer-amount").value <= 0.00){
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      transferForm.classList.add("was-validated");
+    });
+
+    document.querySelectorAll(".transfer-cancel").forEach((transferCancel) => {
+      transferCancel.addEventListener("click", function () {
+        transferForm.reset();
+        transferForm.classList.remove("was-validated");
+        RefreshModals();
+      });
+    });
+  }
+
   // Reset form on cancel event
   document.querySelectorAll(".payment-cancel").forEach((paymentCancel) => {
     paymentCancel.addEventListener("click", function () {
@@ -96,6 +115,10 @@ document.addEventListener("DOMContentLoaded", function(event) {
       // generate new uuids
       document.querySelector("#payment-uuid").value = uuidv4();
       document.querySelector("#deposit-uuid").value = uuidv4();
+      var transferUuid = document.querySelector("#transfer-uuid");
+      if (transferUuid) {
+        transferUuid.value = uuidv4();
+      }
   }
   RefreshModals();
 });

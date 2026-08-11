@@ -21,7 +21,7 @@ from unittest.mock import patch
 
 from sqlalchemy.exc import IntegrityError
 
-from userservice.db import UserDb
+from userservice.db import UserDb, ACCOUNT_TYPE_CHECKING, ACCOUNT_TYPE_SAVINGS
 from userservice.tests.constants import EXAMPLE_USER
 
 
@@ -34,8 +34,9 @@ class TestDb(unittest.TestCase):
         """Init db and create table before each test"""
         # init SQLAlchemy with sqllite in mem
         self.db = UserDb('sqlite:///:memory:')
-        # create users table in mem
+        # create users and accounts tables in mem
         self.db.users_table.create(self.db.engine)
+        self.db.accounts_table.create(self.db.engine)
 
     def test_add_user_returns_none_no_exception(self):
         """test if a user can be added"""
@@ -89,3 +90,31 @@ class TestDb(unittest.TestCase):
         self.assertEqual('5', self.db.generate_accountid())
         # mock_rand was called twice, first generating 4, then 5
         self.assertEqual(2, mock_rand.call_count)
+
+    def test_add_user_with_savings_creates_two_accounts(self):
+        """test signup with open_savings creates checking and savings rows"""
+        user = EXAMPLE_USER.copy()
+        user['username'] = 'savings_user'
+        user['accountid'] = '1000000001'
+        self.db.add_user(user, open_savings=True)
+        accounts = self.db.get_accounts(user['username'])
+        self.assertEqual(2, len(accounts))
+        types = {account['account_type'] for account in accounts}
+        self.assertEqual({ACCOUNT_TYPE_CHECKING, ACCOUNT_TYPE_SAVINGS}, types)
+
+    def test_add_account_opens_savings_for_existing_user(self):
+        """test opening a savings account for an existing user"""
+        user = EXAMPLE_USER.copy()
+        user['username'] = 'open_savings'
+        user['accountid'] = '1000000002'
+        self.db.add_user(user)
+        savings_id = self.db.add_account(
+            user['username'], ACCOUNT_TYPE_SAVINGS, 'Rainy Day'
+        )
+        self.assertIsNotNone(savings_id)
+        accounts = self.db.get_accounts(user['username'])
+        self.assertEqual(2, len(accounts))
+        savings = next(
+            acct for acct in accounts if acct['account_type'] == ACCOUNT_TYPE_SAVINGS
+        )
+        self.assertEqual('Rainy Day', savings['nickname'])

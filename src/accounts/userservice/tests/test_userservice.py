@@ -92,15 +92,28 @@ class TestUserservice(unittest.TestCase):
         self.mocked_db.return_value.get_user.return_value = None
         # mock return value for generate_id from user_db
         self.mocked_db.return_value.generate_accountid.return_value = '123'
+        self.mocked_db.return_value.get_accounts.return_value = [
+            {
+                'accountid': '123',
+                'username': 'jdoe',
+                'account_type': 'CHECKING',
+                'nickname': 'Checking',
+            }
+        ]
         # create example user request
         example_user_request = EXAMPLE_USER_REQUEST.copy()
         # send request to test client
         response = self.test_app.post('/users', data=example_user_request)
         # assert 201 response code
         self.assertEqual(response.status_code, 201)
+        self.assertEqual(list(response.json.keys()), ['accounts'])
         # assert user object added to database had the required fields
         # get the arg that user_db.add_user was called with
         user_object = self.mocked_db.return_value.add_user.call_args[0][0]
+        open_savings = self.mocked_db.return_value.add_user.call_args[1].get(
+            'open_savings', False
+        )
+        self.assertFalse(open_savings)
         # not comparing passhash due to differences in salt
         user_object.pop('passhash')
         # assert user_object is equal to expected object
@@ -197,8 +210,18 @@ class TestUserservice(unittest.TestCase):
         example_user = EXAMPLE_USER.copy()
         example_user_request = EXAMPLE_USER_REQUEST.copy()
         self.mocked_db.return_value.get_user.return_value = example_user
+        self.mocked_db.return_value.get_default_accountid.return_value = EXAMPLE_USER['accountid']
+        self.mocked_db.return_value.get_accounts.return_value = [
+            {
+                'accountid': EXAMPLE_USER['accountid'],
+                'username': EXAMPLE_USER['username'],
+                'account_type': 'CHECKING',
+                'nickname': 'Checking',
+            }
+        ]
         # set private key
         self.flask_app.config['PRIVATE_KEY'] = EXAMPLE_PRIVATE_KEY
+        self.flask_app.config['PUBLIC_KEY'] = EXAMPLE_PUBLIC_KEY
         # send request to test client
         response = self.test_app.get('/login', query_string=example_user_request)
         # assert 200 response
@@ -215,6 +238,71 @@ class TestUserservice(unittest.TestCase):
             decoded_value['name'],
             "{} {}".format(EXAMPLE_USER['firstname'], EXAMPLE_USER['lastname']),
         )
+        self.assertEqual(decoded_value['acct'], EXAMPLE_USER['accountid'])
+        self.assertIn(EXAMPLE_USER['accountid'], decoded_value['accounts'])
+
+    def test_list_accounts_returns_200_for_authenticated_user(self):
+        """test listing accounts for the logged-in user"""
+        accounts = [
+            {
+                'accountid': '123',
+                'username': 'jdoe',
+                'account_type': 'CHECKING',
+                'nickname': 'Checking',
+            }
+        ]
+        self.mocked_db.return_value.get_accounts.return_value = accounts
+        self.flask_app.config['PUBLIC_KEY'] = EXAMPLE_PUBLIC_KEY
+        token = jwt.encode(
+            {'user': 'jdoe', 'acct': '123'},
+            EXAMPLE_PRIVATE_KEY,
+            algorithm='RS256',
+        )
+        response = self.test_app.get(
+            '/users/jdoe/accounts',
+            headers={'Authorization': 'Bearer ' + token},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['accounts'], accounts)
+
+    def test_switch_account_returns_new_token(self):
+        """test switching active account re-issues JWT"""
+        example_user = EXAMPLE_USER.copy()
+        self.mocked_db.return_value.get_user.return_value = example_user
+        self.mocked_db.return_value.user_owns_account.return_value = True
+        self.mocked_db.return_value.get_accounts.return_value = [
+            {
+                'accountid': '123',
+                'username': 'jdoe',
+                'account_type': 'CHECKING',
+                'nickname': 'Checking',
+            },
+            {
+                'accountid': '456',
+                'username': 'jdoe',
+                'account_type': 'SAVINGS',
+                'nickname': 'Savings',
+            },
+        ]
+        self.flask_app.config['PRIVATE_KEY'] = EXAMPLE_PRIVATE_KEY
+        self.flask_app.config['PUBLIC_KEY'] = EXAMPLE_PUBLIC_KEY
+        token = jwt.encode(
+            {'user': 'jdoe', 'acct': '123'},
+            EXAMPLE_PRIVATE_KEY,
+            algorithm='RS256',
+        )
+        response = self.test_app.post(
+            '/users/switch-account',
+            json={'accountid': '456'},
+            headers={'Authorization': 'Bearer ' + token},
+        )
+        self.assertEqual(response.status_code, 200)
+        decoded_value = jwt.decode(
+            algorithms='RS256',
+            jwt=response.json['token'],
+            key=EXAMPLE_PUBLIC_KEY,
+        )
+        self.assertEqual(decoded_value['acct'], '456')
 
     # mock check pw to return false
     @patch('bcrypt.checkpw', return_value=False)
