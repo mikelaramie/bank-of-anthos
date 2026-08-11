@@ -6,6 +6,7 @@
 - [Environments](/docs/environments.md) to learn how to deploy on non-GKE clusters.
 - [Cost-optimized deployment](/docs/cost-optimized-deployment.md) to run on GCP with minimal spend.
 - [Architecture](/docs/architecture.md) for service diagrams and deployment tiers.
+- [Vulnerability report](/docs/vulnerability-report.md) for dependency versions and scan status.
 - [Workload Identity](/docs/workload-identity.md) to learn how to set-up Workload Identity.
 - [CI/CD pipeline](/docs/ci-cd-pipeline.md) to learn details about and how to set-up the CI/CD pipeline.
 - [Troubleshooting](/docs/troubleshooting.md) to learn how to resolve common problems.

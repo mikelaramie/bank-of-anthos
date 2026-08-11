@@ -19,5 +19,5 @@ description = "Load generator service for Bank of Anthos"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "locust>=2.42.6",
+    "locust>=2.46.3",
 ]
