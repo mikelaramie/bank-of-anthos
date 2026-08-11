@@ -5,7 +5,21 @@
     ':approveMajorUpdates',
     'schedule:earlyMondays',
   ],
-  lockFileMaintenance: {
+  baseBranches: ['cursor-test'],
+  vulnerabilityAlerts: {
+    enabled: true,
+    labels: ['security'],
+  },
+  osvVulnerabilityAlerts: true,
+  dockerfile: {
+    enabled: true,
+    managerFilePatterns: ['src/**/Dockerfile'],
+  },
+  maven: {
+    enabled: true,
+    managerFilePatterns: ['src/**/pom.xml'],
+  },
+  'pip-compile': {
     enabled: true,
   },
   kubernetes: {
@@ -16,6 +30,24 @@
       'kubernetes-manifests/**',
     ],
   },
-  packageRules: [],
-  minimumReleaseAge: "1 week",
+  packageRules: [
+    {
+      description: 'Security updates run immediately on cursor-test',
+      matchCategories: ['security'],
+      schedule: ['at any time'],
+      baseBranches: ['cursor-test'],
+      labels: ['security', 'automated-remediation'],
+      automerge: false,
+    },
+    {
+      description: 'Group Dockerfile and dependency updates per service',
+      matchManagers: ['dockerfile', 'maven', 'pip-compile'],
+      groupName: '{{parentDir}} security updates',
+      matchFileNames: ['src/**'],
+      schedule: ['at any time'],
+      baseBranches: ['cursor-test'],
+      labels: ['security', 'automated-remediation'],
+      automerge: false,
+    },
+  ],
 }

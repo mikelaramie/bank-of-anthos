@@ -1,0 +1,21 @@
+---
+description: Create pull requests only against the private fork, never upstream
+alwaysApply: true
+---
+
+# Pull Request Target
+
+When creating pull requests for this repository:
+
+- **Always** open PRs against the private fork: `mikelaramie/bank-of-anthos`
+- **Never** open PRs against the upstream public repo: `GoogleCloudPlatform/bank-of-anthos`
+- Use `origin` (`https://github.com/mikelaramie/bank-of-anthos.git`) as the PR repository
+- Default base branch on the fork: `master` (unless the user specifies otherwise)
+
+When using `gh pr create`, always pass:
+
+```bash
+gh pr create --repo mikelaramie/bank-of-anthos --base master ...
+```
+
+Do not use GitHub links or PR targets that point at `GoogleCloudPlatform/bank-of-anthos`.
