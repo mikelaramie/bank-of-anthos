@@ -26,9 +26,10 @@ Compliance is applied via overlay — **do not** bake security patches into base
 ```
 kubernetes-manifests/
   kustomization.yaml                      # entry point: kubectl apply -k kubernetes-manifests/
-  *.yaml                                  # base manifests (upstream-friendly)
-  components/cursorrules-security/        # global .cursorrules patches — edit here
-  overlays/compliant/kustomization.yaml   # wires base + component + replacements
+  base/                                   # workload manifests + network-boundaries component
+  components/cursorrules-security/        # global .cursorrules patches
+  components/network-boundaries/          # NetworkPolicy + Istio auth policies
+  overlays/compliant/kustomization.yaml   # base + cursorrules-security overlay
 ```
 
 Deploy: `kubectl apply -k kubernetes-manifests/`
