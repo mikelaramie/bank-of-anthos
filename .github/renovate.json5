@@ -21,15 +21,6 @@
   },
   'pip-compile': {
     enabled: true,
-    managerFilePatterns: [
-      '/(^|/)requirements\\.txt$/',
-    ],
-  },
-  pip_requirements: {
-    enabled: false,
-  },
-  constraints: {
-    python: '~=3.11.0',
   },
   kubernetes: {
     managerFilePatterns: [
