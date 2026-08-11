@@ -1,0 +1,91 @@
+# Lower CPU/memory requests so Autopilot schedules fewer billable resources.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ledgerwriter
+spec:
+  template:
+    spec:
+      containers:
+        - name: ledgerwriter
+          env:
+            - name: JVM_OPTS
+              value: -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -Xms128m -Xmx256m
+          resources:
+            limits:
+              cpu: 300m
+              memory: 384Mi
+            requests:
+              cpu: 50m
+              memory: 192Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: balancereader
+spec:
+  template:
+    spec:
+      containers:
+        - name: balancereader
+          resources:
+            limits:
+              cpu: 300m
+              memory: 384Mi
+            requests:
+              cpu: 50m
+              memory: 192Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transactionhistory
+spec:
+  template:
+    spec:
+      containers:
+        - name: transactionhistory
+          env:
+            - name: JVM_OPTS
+              value: -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -Xms128m -Xmx256m
+          resources:
+            limits:
+              cpu: 300m
+              memory: 384Mi
+            requests:
+              cpu: 50m
+              memory: 192Mi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: accounts-db
+spec:
+  template:
+    spec:
+      containers:
+        - name: accounts-db
+          resources:
+            limits:
+              cpu: 200m
+              memory: 384Mi
+            requests:
+              cpu: 50m
+              memory: 128Mi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ledger-db
+spec:
+  template:
+    spec:
+      containers:
+        - name: ledger-db
+          resources:
+            limits:
+              cpu: 200m
+              memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 256Mi

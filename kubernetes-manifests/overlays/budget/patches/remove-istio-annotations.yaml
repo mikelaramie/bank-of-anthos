@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  template:
+    metadata:
+      annotations:
+        proxy.istio.io/config: null
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: userservice
+spec:
+  template:
+    metadata:
+      annotations:
+        proxy.istio.io/config: null
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contacts
+spec:
+  template:
+    metadata:
+      annotations:
+        proxy.istio.io/config: null
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ledgerwriter
+spec:
+  template:
+    metadata:
+      annotations:
+        proxy.istio.io/config: null
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: balancereader
+spec:
+  template:
+    metadata:
+      annotations:
+        proxy.istio.io/config: null
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transactionhistory
+spec:
+  template:
+    metadata:
+      annotations:
+        proxy.istio.io/config: null
