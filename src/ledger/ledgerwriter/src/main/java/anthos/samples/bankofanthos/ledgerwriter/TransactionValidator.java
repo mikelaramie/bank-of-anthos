@@ -30,6 +30,8 @@ import static anthos.samples.bankofanthos.ledgerwriter.ExceptionMessages.
         EXCEPTION_MESSAGE_SEND_TO_SELF;
 import static anthos.samples.bankofanthos.ledgerwriter.ExceptionMessages.
         EXCEPTION_MESSAGE_INVALID_AMOUNT;
+import static anthos.samples.bankofanthos.ledgerwriter.ExceptionMessages.
+        EXCEPTION_MESSAGE_EXCEEDS_LIMIT;
 
 
 /**
@@ -98,6 +100,11 @@ public class TransactionValidator {
             LOGGER.error("Invalid transaction: Transaction amount invalid");
             throw new IllegalArgumentException(
                     EXCEPTION_MESSAGE_INVALID_AMOUNT);
+        }
+        // Ensure amount does not exceed $10,000 limit.
+        if (amount > 1_000_000) {
+            LOGGER.error("Invalid transaction: Amount exceeds limit");
+            throw new IllegalArgumentException(EXCEPTION_MESSAGE_EXCEEDS_LIMIT);
         }
     }
 }

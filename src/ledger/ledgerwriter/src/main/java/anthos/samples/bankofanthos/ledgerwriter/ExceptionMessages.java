@@ -36,4 +36,6 @@ public class ExceptionMessages {
             EXCEPTION_MESSAGE_INVALID_AMOUNT = "invalid amount";
     public static final String EXCEPTION_MESSAGE_DUPLICATE_TRANSACTION =
             "duplicate transaction uuid";
+    public static final String EXCEPTION_MESSAGE_EXCEEDS_LIMIT =
+            "transaction exceeds limit of $10,000. Please call your nearest branch for further assistance.";
 }
