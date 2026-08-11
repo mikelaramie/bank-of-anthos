@@ -1,0 +1,25 @@
+# Strict network boundaries — NetworkPolicy + Istio AuthorizationPolicy (.cursorrules §1.6)
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+  - network-policies/default-deny-ingress.yaml
+  - network-policies/allow-istio-ingress.yaml
+  - network-policies/frontend-allow-ingress.yaml
+  - network-policies/frontend-restrict-egress.yaml
+  - network-policies/balancereader-allow-frontend-ingress.yaml
+  - network-policies/transactionhistory-allow-frontend-ingress.yaml
+  - network-policies/userservice-allow-frontend-ingress.yaml
+  - network-policies/contacts-allow-frontend-ingress.yaml
+  - network-policies/ledgerwriter-allow-frontend-ingress.yaml
+  - istio/peer-authentication-strict-mtls.yaml
+  - istio/destination-rules-mtls.yaml
+  - istio/authorization-policy-deny-all.yaml
+  - istio/authorization-policy-frontend-ingress.yaml
+  - istio/authorization-policy-frontend-egress.yaml
+  - istio/authorization-policy-balancereader.yaml
+  - istio/authorization-policy-transactionhistory.yaml
+  - istio/authorization-policy-userservice.yaml
+  - istio/authorization-policy-contacts.yaml
+  - istio/authorization-policy-ledgerwriter.yaml
+patches:
+  - path: patches/frontend-istio-probes.patch.yaml

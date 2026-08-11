@@ -1,0 +1,10 @@
+# Rewrite HTTP probes for STRICT mTLS sidecar interception.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/rewriteAppHTTPProbers: "true"

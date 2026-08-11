@@ -1,4 +1,8 @@
 # .cursorrules §1.1 — pod-level PSS on postgres StatefulSets (UID/GID 70)
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: _patch
 spec:
   template:
     spec:
