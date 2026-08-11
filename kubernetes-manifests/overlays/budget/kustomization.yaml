@@ -1,0 +1,29 @@
+# Budget overlay — minimal GCP spend for demos and personal use.
+# No Istio/network-boundaries, no loadgenerator, no external LoadBalancer,
+# no Secret Manager, no Cloud Operations export.
+#
+# Deploy: kubectl apply -k kubernetes-manifests/overlays/budget/
+# Access:  kubectl port-forward svc/frontend 8080:80
+#
+# See docs/cost-optimized-deployment.md for cluster setup and teardown.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base-workloads
+patches:
+  - path: patches/db-credentials.yaml
+  - path: patches/frontend-clusterip.yaml
+  - path: patches/disable-observability.yaml
+  - path: patches/remove-istio-annotations.yaml
+  - path: patches/userservice-budget.yaml
+  - path: patches/balancereader-budget.yaml
+  - path: patches/reduce-resources.yaml
+  - target:
+      kind: Deployment
+      name: loadgenerator
+    patch: |-
+      $patch: delete
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: loadgenerator

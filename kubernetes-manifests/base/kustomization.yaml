@@ -2,15 +2,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - userservice.yaml
-  - ledger-writer.yaml
-  - frontend.yaml
-  - balance-reader.yaml
-  - contacts.yaml
-  - transaction-history.yaml
-  - loadgenerator.yaml
-  - ledger-db.yaml
-  - accounts-db.yaml
-  - config.yaml
+  - ../base-workloads
 components:
   - ../components/network-boundaries

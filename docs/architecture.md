@@ -82,3 +82,34 @@ sequenceDiagram
 - **Stateless auth**: `userservice` signs JWTs with an RSA private key. All other services verify them using the public key mounted from a shared Kubernetes Secret — no shared session store.
 - **BFF pattern**: The `frontend` is the only service that calls other services. Backend services are all leaf nodes with no inter-service calls.
 - **Kustomize overlays**: Each service has `base` manifests plus `development`, `staging`, `production`, and `production-fwi` overlays.
+
+## Deployment Tiers
+
+| Tier | Entry point | Credentials | Network | Typical use |
+|------|-------------|-------------|---------|-------------|
+| **Budget** | `kubectl apply -k kubernetes-manifests/overlays/budget/` | ConfigMaps (in-cluster Postgres) | Plain Kubernetes networking | Demos, trial credits, minimal GCP spend |
+| **Compliant** | `kubectl apply -k kubernetes-manifests/` | Secret Manager + Workload Identity for `userservice` and `balancereader` | NetworkPolicy + Istio STRICT mTLS | Hardened single-cluster deployment |
+| **Multi-env CI/CD** | Terraform in `iac/tf-multienv-cicd-anthos-autopilot/` | Secret Manager per environment | ASM + ACM fleet policies | Staging/production pipeline with Cloud SQL |
+
+The budget overlay omits loadgenerator, external LoadBalancers, Istio, and Cloud Operations export. See [`docs/cost-optimized-deployment.md`](cost-optimized-deployment.md) for setup and teardown instructions.
+
+```mermaid
+flowchart LR
+    subgraph budget [Budget tier]
+        B_FE[frontend]
+        B_App[services]
+        B_DB[(in-cluster Postgres)]
+    end
+    User([User]) -->|port-forward| B_FE
+    B_FE --> B_App --> B_DB
+
+    subgraph compliant [Compliant tier]
+        C_FE[frontend]
+        C_App[services]
+        C_SM[Secret Manager]
+        C_DB[(Postgres)]
+    end
+    C_FE -->|mTLS| C_App
+    C_App --> C_SM
+    C_App --> C_DB
+```

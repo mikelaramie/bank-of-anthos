@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: userservice
+spec:
+  template:
+    spec:
+      serviceAccountName: bank-of-anthos
+      containers:
+        - name: userservice
+          env:
+            - name: ACCOUNTS_DB_SECRET_ID
+              $patch: delete
+            - name: GCP_PROJECT
+              $patch: delete
+            - name: ENABLE_TRACING
+              value: "false"
+            - name: ACCOUNTS_DB_URI
+              valueFrom:
+                configMapKeyRef:
+                  key: ACCOUNTS_DB_URI
+                  name: accounts-db-config
