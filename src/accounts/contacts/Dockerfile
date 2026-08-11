@@ -13,26 +13,31 @@
 # limitations under the License.
 
 # Use the official Python docker container, slim version, running Debian
-FROM python:3.14.3-slim@sha256:6a27522252aef8432841f224d9baaa6e9fce07b07584154fa0b9a96603af7456 AS base
+FROM python:3.14.6-slim@sha256:44dd04494ee8f3b538294360e7c4b3acb87c8268e4d0a4828a6500b1eff50061 AS base
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 FROM base AS builder
 
+# Set working directory
+WORKDIR /app
+
 # Install dependencies.
-COPY requirements.txt .
-RUN pip install --prefix="/install" -r requirements.txt
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
 
 FROM base
 
 # Set our working directory
 WORKDIR /app
 
-COPY --from=builder /install /usr/local
+COPY --from=builder /app/.venv /app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
 
 # show python logs as they occur
 ENV PYTHONUNBUFFERED=0
 
 # explicitly set a fallback log level in case no log level is defined by Kubernetes
-ENV LOG_LEVEL info
+ENV LOG_LEVEL=info
 
 # Add application code.
 COPY . .
